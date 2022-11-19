@@ -1,0 +1,28 @@
+# fread in the gtf file and check the class()
+# the gtf_attributes is the 9th column which contains the attributes info
+# ideal to pull out information that we want based on the name "i.e., gene_id", write the following function
+require(tidyverse)
+
+extract_proteinNameAndID <- function(gtf_attributes){
+  # set the raw gtf file names to readable ones
+  setnames(gtf_attributes, names(gtf_attributes), c("chr", "source", "type","start","end","score","strand","phase","attributes"))
+  # select only the stop_codon rows as there are many duplicated info per gene in different rows
+  gtf_attributes <- gtf_attributes[type == "stop_codon"]
+  # extract the attributes column
+  # separate the information in the attributes column
+  # create new columns for the product and protein information and tidy up the column names
+  attributes <- gtf_attributes %>%
+    select(attributes) %>%
+    separate(col = "attributes",
+             sep = "; ",
+             into = c("1","2","3","4","5","6","7","8","9")) %>%
+    rowwise() %>%
+    mutate(products = list(str_subset(c_across(everything()), pattern = "(?<=product ).*"))) %>%
+    mutate(protein_id = list(str_subset(c_across(everything()), pattern = "(?<=protein_id ).*"))) %>%
+    select(c("1", "products", "protein_id")) %>%
+    rename("LOC_id" = `1`)
+    attributes$LOC_id <- str_sub(string = attributes$LOC_id, start = 10, end = 21)
+  return(attributes)
+}
+
+# use source(file = "/scratch1/fan048/Rstudio/Rscripts/Extract.ProteinNameAndID.R") to load the function
